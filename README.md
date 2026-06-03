@@ -1,4 +1,4 @@
-# crwl-dcos
+# crwl-docs
 
 CLI wrapper around [crawler4ai](https://github.com/crawl4ai/crawl4ai) for crawling documentation sites to markdown.
 
