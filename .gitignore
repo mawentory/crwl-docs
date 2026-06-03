@@ -12,3 +12,7 @@ wheels/
 # docs
 .cache/docs/
 crawled_docs/
+
+.cursor/
+.cache
+.pytest_cache/

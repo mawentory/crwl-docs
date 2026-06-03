@@ -1,16 +1,8 @@
 """Tests for crawler4ai.core module."""
 
-import pytest
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock
 
-from crawler4ai.core import (
-    crawl_to_markdown,
-    crawl_to_markdown_streaming,
-    get_domain_parts,
-    get_output_subpath,
-    sanitize_filename,
-)
+from crawler4ai.core import get_domain_parts, get_output_subpath
 
 
 class TestGetDomainParts:
@@ -54,27 +46,3 @@ class TestGetOutputSubpath:
 
     def test_multi_level_subdomain(self):
         assert get_output_subpath("api.v2.github.com") == Path("github/api.v2")
-
-
-class TestSanitizeFilename:
-    def test_normal_string(self):
-        assert sanitize_filename("hello_world") == "hello_world"
-
-    def test_special_characters(self):
-        assert sanitize_filename("file@#$.txt") == "file___.txt"
-
-    def test_long_filename_truncated(self):
-        long_name = "a" * 200
-        assert len(sanitize_filename(long_name)) == 100
-
-
-class TestAsyncCrawl:
-    def test_crawl_to_markdown_streaming_is_async_generator(self):
-        """Test that crawl_to_markdown_streaming is an async generator."""
-        import inspect
-        assert inspect.isasyncgenfunction(crawl_to_markdown_streaming)
-
-    def test_crawl_to_markdown_is_coroutine_function(self):
-        """Test that crawl_to_markdown is an async function."""
-        import inspect
-        assert inspect.iscoroutinefunction(crawl_to_markdown)

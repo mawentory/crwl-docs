@@ -4,11 +4,10 @@ import asyncio
 import re
 from datetime import datetime
 from pathlib import Path
-from typing import AsyncGenerator
 from urllib.parse import urlparse
 
 import tldextract
-from crawl4ai import AsyncWebCrawler, CrawlerRunConfig, CrawlResult, DefaultMarkdownGenerator, PruningContentFilter
+from crawl4ai import AsyncWebCrawler, CrawlerRunConfig, DefaultMarkdownGenerator, PruningContentFilter
 from crawl4ai.deep_crawling import BFSDeepCrawlStrategy
 
 
@@ -58,25 +57,25 @@ def sanitize_filename(name: str) -> str:
     return re.sub(r"[^\w\-_.]", "_", name)[:100]
 
 
-async def crawl_to_markdown_streaming(
+async def crawl_to_markdown(
     url: str,
-    depth: int = 5,
+    depth: int = 3,
     output_base: Path | str | None = None,
-    max_pages: int = 200,
-    verbose: bool = False,
-) -> AsyncGenerator[CrawlResult, None]:
+    max_pages: int = 50,
+    verbose: bool = True,
+) -> list[Path]:
     """
-    Async generator that crawls a website and yields results as they complete.
-
+    Crawl a website and save pages as markdown files.
+    
     Args:
         url: Starting URL to crawl
         depth: Maximum crawl depth
         output_base: Base directory for output (default: crawled_docs)
         max_pages: Maximum number of pages to crawl
-        verbose: Print crawl4ai verbose output during URL discovery
-
-    Yields:
-        CrawlResult objects for each successfully crawled page
+        verbose: Print progress messages
+    
+    Returns:
+        List of paths to created markdown files
     """
     output_base = Path(output_base) if output_base else Path("crawled_docs")
     output_subpath = get_output_subpath(url)
@@ -84,7 +83,6 @@ async def crawl_to_markdown_streaming(
     output_dir.mkdir(parents=True, exist_ok=True)
 
     config = CrawlerRunConfig(
-        verbose=verbose,
         markdown_generator=DefaultMarkdownGenerator(
             content_filter=PruningContentFilter(),
             options={
@@ -100,13 +98,17 @@ async def crawl_to_markdown_streaming(
             include_external=False,
             max_pages=max_pages,
         ),
+        verbose=verbose
     )
 
+    output_files = []
     async with AsyncWebCrawler() as crawler:
         results = await crawler.arun(url=url, config=config)
 
-        for result in results:
+        for i, result in enumerate(results):
             if not result.success:
+                if verbose:
+                    print(f"  Failed: {result.url}")
                 continue
 
             md_obj = result.markdown
@@ -115,7 +117,7 @@ async def crawl_to_markdown_streaming(
             parsed = urlparse(result.url)
             path_slug = sanitize_filename(parsed.path.strip("/").replace("/", "_")) or "index"
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            output_file = output_dir / f"{timestamp}_{path_slug}.md"
+            output_file = output_dir / f"{timestamp}_{i:03d}_{path_slug}.md"
 
             header = f"""---
 url: {result.url}
@@ -125,35 +127,9 @@ depth: {result.metadata.get("depth", 0)}
 
 """
             output_file.write_text(header + markdown)
-            result.output_file = output_file
-
-            yield result
-
-
-async def crawl_to_markdown(
-    url: str,
-    depth: int = 3,
-    output_base: Path | str | None = None,
-    max_pages: int = 50,
-    verbose: bool = True,
-) -> list[Path]:
-    """
-    Crawl a website and save pages as markdown files.
-
-    Args:
-        url: Starting URL to crawl
-        depth: Maximum crawl depth
-        output_base: Base directory for output (default: crawled_docs)
-        max_pages: Maximum number of pages to crawl
-        verbose: Print progress messages
-
-    Returns:
-        List of paths to created markdown files
-    """
-    output_files = []
-    async for result in crawl_to_markdown_streaming(url, depth, output_base, max_pages):
-        output_files.append(result.output_file)
-        if verbose:
-            print(f"  [{len(output_files)}] {result.url}")
+            output_files.append(output_file)
+            
+            if verbose:
+                print(f"  [{i+1}] {result.url}")
 
     return output_files
