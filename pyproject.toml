@@ -1,7 +1,18 @@
 [project]
 name = "crawler4ai"
 version = "0.1.0"
-description = "Add your description here"
+description = "CLI tool for crawling websites to markdown"
 readme = "README.md"
 requires-python = ">=3.13"
-dependencies = []
+dependencies = [
+    "click>=8.1.0",
+    "crawl4ai>=0.3.0",
+    "rich>=13.0.0",
+    "tldextract>=5.1.0",
+]
+
+[project.scripts]
+crwl-docs = "crawler4ai.cli:cli"
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0.0"]
