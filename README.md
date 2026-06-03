@@ -7,7 +7,7 @@ CLI wrapper around [crawler4ai](https://github.com/crawl4ai/crawl4ai) for crawli
 Requires Python 3.13+
 
 ```bash
-uv tool install git+https://github.com/mawentory/crwl-dcos
+uv tool install git+https://github.com/mawentory/crwl-docs
 ```
 
 ## Usage
